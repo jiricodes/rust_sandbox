@@ -1,0 +1,6 @@
+[submodule "http_server"]
+	path = http_server
+	url = https://github.com/jiricodes/rust_http_server.git
+[submodule "sdl2"]
+	path = sdl2
+	url = https://github.com/jiricodes/rust_sdl2.git
