@@ -1,27 +1,33 @@
 mod mylib;
-use mylib::{args::Args, read, stats::Stats, write};
+use mylib::{args::Args, read, stats, write};
 use std::io::Result as IoResult;
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 fn main() -> IoResult<()> {
     let args = Args::new();
-    let mut stats = Stats::new();
-    loop {
-        let buffer = match read::read_input(&args.infile) {
-            Ok(x) if x.is_empty() => break,
-            Ok(x) => x,
-            Err(_) => break,
-        };
-        stats.update(buffer.len(), false);
-        if !args.silent {
-            stats.eprint_status();
-        }
-        if !write::write_output(&args.outfile, &buffer)? {
-            break;
-        }
-    }
-    stats.update(0, true);
-    if !args.silent {
-        stats.eprint_status();
-    }
+    let Args {
+        infile,
+        outfile,
+        silent,
+    } = args;
+
+    let quit = Arc::new(Mutex::new(false));
+    let (quit1, quit2, quit3) = (quit.clone(), quit.clone(), quit.clone());
+
+    let read_handle = thread::spawn(move || read::read_loop(&infile, quit1));
+    let stats_handle = thread::spawn(move || stats::stats_loop(silent, quit2));
+    let write_handle = thread::spawn(move || write::write_loop(&outfile, quit3));
+
+    //crash if any threads have crashed
+    // `.join()` returns a `thread::Result<io::Result<()>>`
+    let read_io_result = read_handle.join().unwrap();
+    let stat_io_result = stats_handle.join().unwrap();
+    let write_io_result = write_handle.join().unwrap();
+
+    read_io_result?;
+    stat_io_result?;
+    write_io_result?;
+
     Ok(())
 }
