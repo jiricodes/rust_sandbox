@@ -1,55 +1,27 @@
-use clap::{App, Arg};
-use std::env;
-use std::io::{self, ErrorKind, Read, Result as IoResult, Write};
-
-const CHUNK_SIZE: usize = 16 * 1024;
+mod mylib;
+use mylib::{args::Args, read, stats::Stats, write};
+use std::io::Result as IoResult;
 
 fn main() -> IoResult<()> {
-    let matches = App::new("pipeviewer")
-        .arg(Arg::with_name("infile").help("Read from a file instead of stdin"))
-        .arg(
-            Arg::with_name("outfile")
-                .short("o")
-                .long("outfile")
-                .takes_value(true)
-                .help("Write output to a file instead of stdout"),
-        )
-        .arg(
-            Arg::with_name("silent")
-                .short("s")
-                .long("silent")
-                .help("Silences the output"),
-        )
-        .get_matches();
-    let infile = matches.value_of("infile").unwrap_or_default();
-    let outfile = matches.value_of("outfile").unwrap_or_default();
-    let silent = if matches.is_present("silent") {
-        true
-    } else {
-        !env::var("PV_SILENT").unwrap_or_default().is_empty()
-    };
-    let mut total_bytes = 0;
-    dbg!(infile, outfile, silent);
-    let mut buffer = [0; CHUNK_SIZE];
+    let args = Args::new();
+    let mut stats = Stats::new();
     loop {
-        let num_read = match io::stdin().read(&mut buffer) {
-            Ok(0) => break,
+        let buffer = match read::read_input(&args.infile) {
+            Ok(x) if x.is_empty() => break,
             Ok(x) => x,
             Err(_) => break,
         };
-        total_bytes += num_read;
-        if !silent {
-            eprint!("\rTotal Bytes: {}", total_bytes);
+        stats.update(buffer.len(), false);
+        if !args.silent {
+            stats.eprint_status();
         }
-        if let Err(e) = io::stdout().write_all(&buffer[..num_read]) {
-            if e.kind() == ErrorKind::BrokenPipe {
-                break;
-            }
-            return Err(e);
+        if !write::write_output(&args.outfile, &buffer)? {
+            break;
         }
     }
-    if !silent {
-        eprintln!("\rTotal Bytes: {}", total_bytes);
+    stats.update(0, true);
+    if !args.silent {
+        stats.eprint_status();
     }
     Ok(())
 }
