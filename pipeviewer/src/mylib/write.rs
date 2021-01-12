@@ -1,6 +1,6 @@
+use crossbeam::channel::Receiver;
 use std::fs::File;
 use std::io::{self, BufWriter, ErrorKind, Result as IoResult, Write};
-use std::sync::{Arc, Mutex};
 
 // pub fn write_output(outfile: &str, buffer: &[u8]) -> IoResult<bool> {
 //     let mut writer: Box<dyn Write> = if !outfile.is_empty() {
@@ -20,7 +20,7 @@ use std::sync::{Arc, Mutex};
 //     Ok(true)
 // }
 
-pub fn write_loop(outfile: &str, quit: Arc<Mutex<bool>>) -> IoResult<()> {
+pub fn write_loop(outfile: &str, write_rx: Receiver<Vec<u8>>) -> IoResult<()> {
     let mut writer: Box<dyn Write> = if !outfile.is_empty() {
         Box::new(BufWriter::new(File::create(outfile)?))
     } else {
@@ -28,13 +28,9 @@ pub fn write_loop(outfile: &str, quit: Arc<Mutex<bool>>) -> IoResult<()> {
     };
 
     loop {
-        //todo: receive buffer from stats thread
-        let buffer: Vec<u8> = Vec::new();
-        {
-            let quit = quit.lock().unwrap();
-            if *quit {
-                break;
-            }
+        let buffer: Vec<u8> = write_rx.recv().unwrap();
+        if buffer.is_empty() {
+            break;
         }
         if let Err(e) = writer.write_all(&buffer) {
             if e.kind() == ErrorKind::BrokenPipe {

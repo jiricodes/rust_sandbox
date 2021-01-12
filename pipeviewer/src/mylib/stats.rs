@@ -1,6 +1,6 @@
 // use std::fmt;
+use crossbeam::channel::Receiver;
 use std::io::Result as IoResult;
-use std::sync::{Arc, Mutex};
 
 // pub struct Stats {
 //     total_bytes: usize,
@@ -34,21 +34,20 @@ use std::sync::{Arc, Mutex};
 //     }
 // }
 
-pub fn stats_loop(silent: bool, quit: Arc<Mutex<bool>>) -> IoResult<()> {
+pub fn stats_loop(silent: bool, stats_rx: Receiver<usize>) -> IoResult<()> {
     let mut total_bytes = 0;
     loop {
-        // todo: receive bytes from read thread
-        let buffer: Vec<u8> = Vec::new();
-        total_bytes += buffer.len();
+        let num_bytes = stats_rx.recv().unwrap();
+        total_bytes += num_bytes;
         if !silent {
             eprint!("\rTotal Bytes: {}", total_bytes);
         }
-        // todo:send vector to write loop
-        let quit = quit.lock().unwrap();
-        if *quit {
+        if num_bytes == 0 {
             break;
         }
     }
-    eprintln!();
+    if !silent {
+        eprintln!();
+    }
     Ok(())
 }
