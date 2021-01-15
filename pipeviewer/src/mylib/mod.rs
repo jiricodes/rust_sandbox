@@ -1,3 +1,6 @@
+//! # Pipeviewer library documentation
+//! This is library for pipeviewer project
+
 pub mod args;
 pub mod read;
 pub mod stats;
