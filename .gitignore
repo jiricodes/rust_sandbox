@@ -16,3 +16,12 @@ algos_and_datastructures/Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+#wasm-example stuff
+wasm-example/target
+wasm-example/**/*.rs.bk
+wasm-example/Cargo.lock
+wasm-example/bin/
+wasm-example/pkg/
+wasm-example/wasm-pack.log
+wasm-example/www
