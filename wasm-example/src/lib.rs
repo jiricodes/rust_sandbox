@@ -7,12 +7,30 @@ use wasm_bindgen::prelude::*;
 extern crate fixedbitset;
 use fixedbitset::FixedBitSet;
 extern crate web_sys;
+use web_sys::console;
 
 // A macro to provide `println!(..)`-style syntax for `console.log` logging.
 macro_rules! log {
     ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
+        console::log_1(&format!( $( $t )* ).into());
     }
+}
+
+pub struct Timer<'a> {
+	name: &'a str,
+}
+
+impl<'a> Timer<'a> {
+	pub fn new(name: &'a str) -> Timer<'a> {
+		console::time_with_label(name);
+		Timer { name }
+	}
+}
+
+impl<'a> Drop for Timer<'a> {
+	fn drop(&mut self) {
+		console::time_end_with_label(self.name);
+	}
 }
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
@@ -79,6 +97,7 @@ impl Universe {
 #[wasm_bindgen]
 impl Universe {
 	pub fn tick(&mut self) {
+		let _timer = Timer::new("Universe::tick");
 		let mut next = self.cells.clone();
 
 		for row in 0..self.height {
@@ -98,9 +117,9 @@ impl Universe {
 					},
 				);
 
-				if self.cells[idx] != next[idx] {
-					log!("[{}, {}] {} -> {}", row, col, self.cells[idx], next[idx])
-				}
+				// if self.cells[idx] != next[idx] {
+				// 	log!("[{}, {}] {} -> {}", row, col, self.cells[idx], next[idx])
+				// }
 			}
 		}
 
@@ -142,6 +161,61 @@ impl Universe {
 			(row + 1, col + 1),
 			(row, col + 1),
 			(row - 1, col),
+		];
+		self.set_cells(&cells);
+	}
+
+	pub fn insert_pulsar(&mut self, row: u32, col: u32) {
+		let cells = [
+			// Center [6, 6]
+			(row - 6, col - 4), // top left
+			(row - 6, col - 3),
+			(row - 6, col - 2),
+			(row - 4, col - 6),
+			(row - 4, col - 1),
+			(row - 3, col - 6),
+			(row - 3, col - 1),
+			(row - 2, col - 6),
+			(row - 2, col - 1),
+			(row - 1, col - 4),
+			(row - 1, col - 3),
+			(row - 1, col - 2),
+			(row - 6, col + 4), // top right
+			(row - 6, col + 3),
+			(row - 6, col + 2),
+			(row - 4, col + 6),
+			(row - 4, col + 1),
+			(row - 3, col + 6),
+			(row - 3, col + 1),
+			(row - 2, col + 6),
+			(row - 2, col + 1),
+			(row - 1, col + 4),
+			(row - 1, col + 3),
+			(row - 1, col + 2),
+			(row + 6, col - 4), // bottom left
+			(row + 6, col - 3),
+			(row + 6, col - 2),
+			(row + 4, col - 6),
+			(row + 4, col - 1),
+			(row + 3, col - 6),
+			(row + 3, col - 1),
+			(row + 2, col - 6),
+			(row + 2, col - 1),
+			(row + 1, col - 4),
+			(row + 1, col - 3),
+			(row + 1, col - 2),
+			(row + 6, col + 4), // bottom right
+			(row + 6, col + 3),
+			(row + 6, col + 2),
+			(row + 4, col + 6),
+			(row + 4, col + 1),
+			(row + 3, col + 6),
+			(row + 3, col + 1),
+			(row + 2, col + 6),
+			(row + 2, col + 1),
+			(row + 1, col + 4),
+			(row + 1, col + 3),
+			(row + 1, col + 2),
 		];
 		self.set_cells(&cells);
 	}
