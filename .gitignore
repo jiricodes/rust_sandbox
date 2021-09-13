@@ -24,4 +24,3 @@ wasm-example/Cargo.lock
 wasm-example/bin/
 wasm-example/pkg/
 wasm-example/wasm-pack.log
-wasm-example/www
